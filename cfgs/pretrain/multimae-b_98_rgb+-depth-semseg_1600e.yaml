@@ -28,11 +28,11 @@ loss_on_unmasked: False
 fp32_output_adapters: semseg
 
 # Data
-data_path: '/path/to/dataset' # Change me
+data_path: '/mnt/T/mnt/trainingdata/MultiMAE/imagenet_multitask/train/' # Change me
 
 # Wandb logging
 log_wandb: False # Set to True to log to Weights & Biases
 wandb_project: 'multimae-pretrain'
 wandb_entity: null # Change if needed
 wandb_run_name: multimae-b_98_rgb+-depth-semseg_1600e
-output_dir: 'output/pretrain/multimae-b_98_rgb+-depth-semseg_1600e' # Change directory if needed
+output_dir: '/mnt/T/mnt/trainingdata/MultiMAE/imagenet_multitask/output/pretrain/multimae-b_98_rgb+-depth-semseg_1600e' # Change directory if needed

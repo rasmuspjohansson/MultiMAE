@@ -122,7 +122,11 @@ class DatasetFolder(VisionDataset):
         super(DatasetFolder, self).__init__(root, transform=transform,
                                             target_transform=target_transform)
         classes, class_to_idx = self._find_classes(self.root)
+        print("root is : "+str(self.root))
+
+
         samples = make_dataset(self.root, class_to_idx, extensions, is_valid_file)
+        print("####allowed extensions are#### : "+str(self.extensions))
         if len(samples) == 0:
             msg = "Found 0 logs in subfolders of: {}\n".format(self.root)
             if extensions is not None:
@@ -131,6 +135,7 @@ class DatasetFolder(VisionDataset):
 
         self.loader = loader
         self.extensions = extensions
+        print("allowed extensaions are : "+str(self.extensions))
 
         self.classes = classes
         self.class_to_idx = class_to_idx
@@ -231,6 +236,8 @@ class MultiTaskDatasetFolder(VisionDataset):
         super(MultiTaskDatasetFolder, self).__init__(root, transform=transform,
                                             target_transform=target_transform)
         self.tasks = tasks
+        print("line 239 ish: root is : "+str(self.root))
+        print("line 239 ish: task is is : "+str(self.tasks[0]))
         classes, class_to_idx = self._find_classes(os.path.join(self.root, self.tasks[0]))
 
         prefixes = {} if prefixes is None else prefixes
@@ -266,6 +273,7 @@ class MultiTaskDatasetFolder(VisionDataset):
         
         self.cache = {}
 
+
     def _find_classes(self, dir: str) -> Tuple[List[str], Dict[str, int]]:
         """
         Finds the class folders in a dataset.
@@ -279,7 +287,12 @@ class MultiTaskDatasetFolder(VisionDataset):
         Ensures:
             No class is a subdirectory of another.
         """
+        print("dir is:"+str(dir))
+        print("os.listdir is:"+str(os.listdir(dir)))
+        print("os.scandir(dir):"+str(os.scandir(dir)))
+
         classes = [d.name for d in os.scandir(dir) if d.is_dir()]
+        print("classes are :"+str(classes))
         classes.sort()
         class_to_idx = {cls_name: i for i, cls_name in enumerate(classes)}
         return classes, class_to_idx
