@@ -337,7 +337,10 @@ def main(args):
         global_rank = utils.get_rank()
         sampler_rank = global_rank
         num_training_steps_per_epoch = len(dataset_train) // args.batch_size // num_tasks
-        print(":"+str(IM HERE print pout the len(dataset_train) // args.batch_size // num_tasks   values in order to see what goes wrong !!1 most probably I need to have a larger dataset or smaller batchsize!!!))
+        print("num_training_steps_per_epoch: "+str(num_training_steps_per_epoch))
+        print("len(dataset_train): "+str(len(dataset_train)))
+        print(" args.batch_size: "+str( args.batch_size))
+        print("num_tasks: "+str(num_tasks))
 
         sampler_train = torch.utils.data.DistributedSampler(
             dataset_train, num_replicas=num_tasks, rank=sampler_rank, shuffle=True, drop_last=True,

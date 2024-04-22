@@ -631,6 +631,9 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module, data_loa
         # Forward + backward
         with torch.cuda.amp.autocast(enabled=fp16):
             preds = model(input_dict, return_all_layers=return_all_layers)
+            print("preds:"+str(preds))
+
+            print("np.array(preds).shape:"+str(np.array(preds).shape))
             seg_pred, seg_gt = preds['semseg'], tasks_dict['semseg']
             loss = criterion(seg_pred, seg_gt)
 
