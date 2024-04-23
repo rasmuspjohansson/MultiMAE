@@ -1,3 +1,14 @@
+
+
+
+
+
+
+
+
+
+
+
 # Copyright (c) EPFL VILAB.
 # All rights reserved.
 
@@ -76,6 +87,59 @@ DOMAIN_CONF = {
     },
 }
 
+
+def save_tiff(numpy_array,path,shape_file,meter_per_pixel = 0.1):
+    """
+    Save an array as GEotif based on a shapefile for the area covered
+    :param numpy_array:
+    :param path:
+    :param shape_file: e.g C:/Users/b199819/Desktop/imageshape.shp
+    :return:
+    """
+
+
+
+    #extract the coordinates form the shapefile that defines the area we have made a map over
+    #when creating a geotif we want the coordinates for the upper left corner.
+    # the shapefile lists 5 points [(x1,y1),(x2,y2),(x3,y3),(x4,y4),(x1,y1)] coresponding to lower left ,upper left ,upper right ,lower right and lower left
+    #in order to get the coordinate for teh upper left we extract teh mimimum x and maximum y
+
+    if shapefile != None:
+        shapefile = ogr.Open(shape_file)
+        layer = shapefile.GetLayer()
+        #print("coordinates in shapefile :"+str([f.GetGeometryRef().ExportToWkt() for f in layer][0].replace("(","").replace(","," ").split()))
+
+        #after splitting we get this format
+        # ['POLYGON', '724000', '6175000', '724000', '6176000', '725000', '6176000', '725000', '6175000', '724000', '6175000))']
+        #in order to get (x2,y2) we need to extract the item at position 3 and 4
+
+        splitted_coordinates = [f.GetGeometryRef().ExportToWkt() for f in layer][0].replace("(","").replace(","," ").split()
+        print("splitted_coordinates:"+str(splitted_coordinates))
+        coordinate_list=filter_numbers_and_whitespaces([f.GetGeometryRef().ExportToWkt() for f in layer][0].replace(","," ")).split()
+        #turn the coordinates from string format to float
+        xs= [float(coordinate_list[i]) for i in range(0,len(coordinate_list),2)]
+        ys = [float(coordinate_list[i]) for i in range(1, len(coordinate_list)-1, 2)]
+        min_x = min(xs)
+        max_y = max(ys)
+    else:
+        print("no shape file give, georefrence image to coordinates 0,0 ")
+        min_x = 0
+        max_y = 0
+        
+
+    if len(numpy_array.shape)==2:
+        #ad an extra dimension of there only are 2
+        #rasterios write operation demans a 3dim array
+        numpy_array= np.expand_dims(numpy_array,axis=0)
+
+    number_of_bands, height, width = numpy_array.shape
+
+
+    kwargs = {'driver': 'GTiff', 'dtype': numpy_array.dtype, 'nodata': None, 'width': width, 'height': height, 'count': number_of_bands, 'crs': CRS.from_epsg(25832), 'transform': rasterio.Affine(meter_per_pixel, 0.0, min_x, 0.0, -meter_per_pixel, max_y)}
+
+    with rasterio.open(path, 'w', **kwargs) as dst:
+        dst.write(numpy_array)
+    print("saved file: "+str(path))
 
 def get_args():
     config_parser = parser = argparse.ArgumentParser(description='Training Config', add_help=False)
@@ -211,9 +275,9 @@ def get_args():
     parser.add_argument('--test', action='store_true',
                         help='Perform testing only')
     parser.add_argument('--dist_eval', action='store_true', default=False,
-                    help='Enabling distributed evaluation')
+                        help='Enabling distributed evaluation')
     parser.add_argument('--no_dist_eval', action='store_false', dest='dist_eval',
-                    help='Disabling distributed evaluation')
+                        help='Disabling distributed evaluation')
     parser.set_defaults(dist_eval=False)
     parser.add_argument('--num_workers', default=16, type=int)
     parser.add_argument('--pin_mem', action='store_true',
@@ -465,8 +529,8 @@ def main(args):
         model_without_ddp = model.module
 
     optimizer = create_optimizer(args, model_without_ddp, skip_list=skip_weight_decay_list,
-            get_num_layer=assigner.get_layer_id if assigner is not None else None,
-            get_layer_scale=assigner.get_scale if assigner is not None else None)
+                                 get_num_layer=assigner.get_layer_id if assigner is not None else None,
+                                 get_layer_scale=assigner.get_scale if assigner is not None else None)
     loss_scaler = NativeScaler(enabled=args.fp16)
 
     print("Use step level LR & WD scheduler!")
@@ -535,7 +599,7 @@ def main(args):
             log_images = args.log_wandb and args.log_images_wandb and (epoch % args.log_images_freq == 0)
             val_stats = evaluate(model=model, criterion=criterion, data_loader=data_loader_val,
                                  device=device, epoch=epoch, in_domains=args.in_domains,
-                                 num_classes=args.num_classes, log_images=log_images, 
+                                 num_classes=args.num_classes, log_images=log_images,
                                  dataset_name=args.dataset_name, mode='val', fp16=args.fp16,
                                  return_all_layers=return_all_layers)
             if max_miou < val_stats["mean_iou"]:
@@ -627,7 +691,7 @@ def train_one_epoch(model: torch.nn.Module, criterion: torch.nn.Module, data_loa
             psemseg  = tasks_dict['pseudo_semseg']
             psemseg[psemseg > COCO_SEMSEG_NUM_CLASSES - 1] = COCO_SEMSEG_NUM_CLASSES
             input_dict['semseg'] = psemseg
-        
+
         # Forward + backward
         with torch.cuda.amp.autocast(enabled=fp16):
             preds = model(input_dict, return_all_layers=return_all_layers)
@@ -710,6 +774,8 @@ def evaluate(model, criterion, data_loader, device, epoch, in_domains, num_class
         seg_preds_with_void = []
         depth_gts = []
 
+    file_nr= 0
+
     for (x, _) in metric_logger.log_every(data_loader, print_freq, header):
         tasks_dict = {
             task: tensor.to(device, non_blocking=True)
@@ -736,6 +802,7 @@ def evaluate(model, criterion, data_loader, device, epoch, in_domains, num_class
         loss_value = loss.item()
         # If there is void, exclude it from the preds and take second highest class
         seg_pred_argmax = seg_pred[:, :num_classes].argmax(dim=1)
+        save_tif(numpy_array=seg_pred_argmax,path="filename_"+str(file_nr)+ ".tif" ,shape_file = None)
         seg_preds.extend(list(seg_pred_argmax.cpu().numpy()))
         seg_gts.extend(list(seg_gt.cpu().numpy()))
 
