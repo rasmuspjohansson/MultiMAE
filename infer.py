@@ -1,14 +1,4 @@
 
-
-
-
-
-
-
-
-
-
-
 # Copyright (c) EPFL VILAB.
 # All rights reserved.
 
@@ -25,6 +15,8 @@
 # https://github.com/facebookresearch/mae
 # https://github.com/open-mmlab/mmsegmentation
 # --------------------------------------------------------
+import rasterio
+from rasterio.crs import CRS
 import argparse
 import datetime
 import json
@@ -104,7 +96,7 @@ def save_tiff(numpy_array,path,shape_file,meter_per_pixel = 0.1):
     # the shapefile lists 5 points [(x1,y1),(x2,y2),(x3,y3),(x4,y4),(x1,y1)] coresponding to lower left ,upper left ,upper right ,lower right and lower left
     #in order to get the coordinate for teh upper left we extract teh mimimum x and maximum y
 
-    if shapefile != None:
+    if shape_file != None:
         shapefile = ogr.Open(shape_file)
         layer = shapefile.GetLayer()
         #print("coordinates in shapefile :"+str([f.GetGeometryRef().ExportToWkt() for f in layer][0].replace("(","").replace(","," ").split()))
@@ -777,6 +769,7 @@ def evaluate(model, criterion, data_loader, device, epoch, in_domains, num_class
     file_nr= 0
 
     for (x, _) in metric_logger.log_every(data_loader, print_freq, header):
+        file_nr +=1
         tasks_dict = {
             task: tensor.to(device, non_blocking=True)
             for task, tensor in x.items()
@@ -802,7 +795,7 @@ def evaluate(model, criterion, data_loader, device, epoch, in_domains, num_class
         loss_value = loss.item()
         # If there is void, exclude it from the preds and take second highest class
         seg_pred_argmax = seg_pred[:, :num_classes].argmax(dim=1)
-        save_tif(numpy_array=seg_pred_argmax,path="filename_"+str(file_nr)+ ".tif" ,shape_file = None)
+        save_tiff(numpy_array=np.array(seg_pred_argmax.cpu(),dtype=np.uint8),path="filename_"+str(file_nr)+ ".tif" ,shape_file = None)
         seg_preds.extend(list(seg_pred_argmax.cpu().numpy()))
         seg_gts.extend(list(seg_gt.cpu().numpy()))
 

@@ -1,7 +1,7 @@
 # ADE20K config
 
 # Infer from:
-finetune: '/mnt/T/mnt/trainingdata/MultiMAE/output/checkpoint-3.pth' # Change me
+finetune: '/mnt/T/mnt/trainingdata/MultiMAE/finetune_output_rgb/checkpoint-best.pth' # Change me
 
 # Input tasks
 in_domains: rgb
