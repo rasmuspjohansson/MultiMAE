@@ -117,6 +117,8 @@ def save_tiff(numpy_array,path,shape_file,meter_per_pixel = 0.1):
         print("no shape file give, georefrence image to coordinates 0,0 ")
         min_x = 0
         max_y = 0
+    print("numpy arraya .shape:"+str(numpy_array.shape))
+    print("len(numpy arraya .shape):"+str(len(numpy_array.shape)))
         
 
     if len(numpy_array.shape)==2:
@@ -125,6 +127,7 @@ def save_tiff(numpy_array,path,shape_file,meter_per_pixel = 0.1):
         numpy_array= np.expand_dims(numpy_array,axis=0)
 
     number_of_bands, height, width = numpy_array.shape
+    print("number_of_bands, height, width:"+str([number_of_bands, height, width]))
 
 
     kwargs = {'driver': 'GTiff', 'dtype': numpy_array.dtype, 'nodata': None, 'width': width, 'height': height, 'count': number_of_bands, 'crs': CRS.from_epsg(25832), 'transform': rasterio.Affine(meter_per_pixel, 0.0, min_x, 0.0, -meter_per_pixel, max_y)}
@@ -795,7 +798,13 @@ def evaluate(model, criterion, data_loader, device, epoch, in_domains, num_class
         loss_value = loss.item()
         # If there is void, exclude it from the preds and take second highest class
         seg_pred_argmax = seg_pred[:, :num_classes].argmax(dim=1)
-        save_tiff(numpy_array=np.array(seg_pred_argmax.cpu(),dtype=np.uint8),path="filename_"+str(file_nr)+ ".tif" ,shape_file = None)
+
+        # the[0] is used to remove the batch dimension (we asume the batchsize is 0)
+        # save predictions
+        save_tiff(numpy_array=np.array(seg_pred_argmax.cpu()[0],dtype=np.uint8),path="filename_"+str(file_nr)+ ".tif" ,shape_file = None)
+        # save probs
+        save_tiff(numpy_array=np.array(seg_pred[:, :num_classes].cpu()[0],dtype=np.float32),path="filename_probs"+str(file_nr)+ ".tif" ,shape_file = None)
+
         seg_preds.extend(list(seg_pred_argmax.cpu().numpy()))
         seg_gts.extend(list(seg_gt.cpu().numpy()))
 
