@@ -1,0 +1,53 @@
+# ADE20K config
+
+# Infer from:
+finetune: '/mnt/T/mnt/trainingdata/MultiMAE/finetune_output_rgb_depth_reeducedbatchsizefrom4to_2/checkpoint-63.pth' # Change me
+
+# Input tasks
+in_domains: rgb-depth
+
+# Architecture
+model: multivit_base
+patch_size: 16
+num_global_tokens: 1
+drop_path_encoder: 0.1
+output_adapter: convnext
+decoder_dim: 6144
+decoder_preds_per_patch: 16
+decoder_depth: 4
+
+# Train
+epochs: 8
+opt: adamw
+lr: 0.0001 # = 1e-4
+warmup_lr: 0.000001 # = 1e-6
+min_lr: 0.
+warmup_epochs: 1
+batch_size: 1
+input_size: 512
+layer_decay: 0.75
+
+# Augmentation
+aug_name: simple
+
+# Data
+data_path: '/mnt/T/mnt/trainingdata/MultiMAE/imagenet_multitask/train/' # Change me
+eval_data_path: '/mnt/T/mnt/trainingdata/MultiMAE/imagenet_multitask/train/' # Change me
+num_classes: 150
+dataset_name: sdfirgb
+dist_eval: True
+seg_reduce_zero_label: True
+eval_freq: 1
+
+# Misc.
+find_unused_params: False
+
+# Wandb and logging
+log_wandb: False # Set to True to log to Weights & Biases
+wandb_project: 'multimae-finetune-semseg'
+wandb_entity: null # Change if needed
+wandb_run_name: ft_ade_64e_multimae-b_rgb
+log_images_wandb: True
+log_images_freq: 5
+#output_dir: 'output/finetune/semseg/ade/ft_ade_64e_multimae-b_rgb' # Change if needed
+output_dir: '/mnt/T/mnt/trainingdata/MultiMAE/finetune_output_rgb_2024_04_29'
